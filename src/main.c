@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
-
+#include "audio.h"
 #include <SDL.h>
 #include <SDL_image.h>
-
 // Define MAX and MIN macros
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
@@ -26,7 +25,6 @@ struct sprite{
     int speed;
     bool die;
 };
-
 
 bool rect_collision_detection(struct sprite a,struct sprite b){
     if (a.rect.x < b.rect.x + b.rect.w &&
@@ -54,6 +52,21 @@ bool circle_collision_detection(struct sprite a,struct sprite b){
     }
 }
 
+static int playSoundThread(void *path)
+{
+    playSound(path, SDL_MIX_MAXVOLUME);
+    return 1;
+}
+
+static void playAudio(char *path){
+    SDL_Thread *thread;
+    int threadReturnValue;
+    thread = SDL_CreateThread(playSoundThread, "TestThread",path);
+    SDL_WaitThread(thread, &threadReturnValue);
+}
+
+
+
 int main(int argc, char* argv[])
 {
     // Unused argc, argv
@@ -61,12 +74,15 @@ int main(int argc, char* argv[])
     (void) argv;
 
     // Initialize SDL2
-    if(SDL_Init(SDL_INIT_VIDEO) < 0)
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     {
         printf("SDL2 could not be initialized!\n"
                "SDL2 Error: %s\n", SDL_GetError());
         return 0;
     }
+
+    /* Init Simple-SDL2-Audio */
+    initAudio();
 
     // Initialize SDL2_image
     int flags = IMG_INIT_PNG; // Can be: IMG_INIT_JPG | IMG_INIT_PNG
@@ -197,6 +213,7 @@ int main(int argc, char* argv[])
                                             fires[i].rect.x=player.rect.x+player.rect.w/2-fires[i].rect.w/2;
                                             fires[i].rect.y=player.rect.y;
                                             fires[i].die=false;
+                                            playAudio("assets/gan.wav");
                                             break;
                                         }
                                     }
@@ -270,6 +287,7 @@ int main(int argc, char* argv[])
                                     if(circle_collision_detection(fires[i],enemys[j])){
                                         fires[i].die=true;
                                         enemys[j].die=true;
+                                        playAudio("assets/blast.wav");
                                     }
                                 }
                             }
@@ -316,6 +334,8 @@ int main(int argc, char* argv[])
 
     // Quit SDL
     SDL_Quit();
+
+    endAudio();
 
     return 0;
 }
